@@ -14,4 +14,10 @@
         android:layout_height="wrap_content"
         android:text="基本三角形" />
 
+    <Button
+        android:id="@+id/test_triangles_vbo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="三角形+VBO" />
+
 </LinearLayout>
