@@ -3,9 +3,9 @@ package com.yibasan.opengl30demo.test
 import android.content.Context
 import android.opengl.GLES30
 import android.opengl.GLSurfaceView
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
 import com.yibasan.opengl30demo.R
 import com.yibasan.opengl30demo.util.AssetsUtils
 import com.yibasan.opengl30demo.util.ShardUtils
@@ -13,14 +13,22 @@ import kotlinx.android.synthetic.main.activity_test__triangles.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
+import java.nio.IntBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
 class test_Triangles_vbo_Activity : AppCompatActivity() {
+
+    companion object {
+        var TAG = "test_Triangles_vbo_Activity"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_test__triangles_vbo)
         title = "三角形+VBO"
+
+        glSurfaceView.setEGLContextClientVersion(3)
 
         glSurfaceView.setRenderer(TrianglesRenderer(applicationContext))
 
@@ -49,6 +57,7 @@ class test_Triangles_vbo_Activity : AppCompatActivity() {
 
         var bufferColor: FloatBuffer? = null
         var bufferVertex: FloatBuffer? = null
+        var vao: IntBuffer? = null
 
         private fun getVertexString(): String? {
             return AssetsUtils.loadFromAssetsFile(mContext.resources, "very/vertex.sh")
@@ -92,7 +101,7 @@ class test_Triangles_vbo_Activity : AppCompatActivity() {
             aPosition = GLES30.glGetAttribLocation(programIndex, "aPosition")
 
             Log.d(
-                test_Triangles_Activity.TAG,
+                TAG,
                 "vertexIndex=$vertexIndex,fragmenIndex=$fragmenIndex,programIndex=$programIndex,aColor=$aColor,aPosition=$aPosition"
             )
 
@@ -118,6 +127,49 @@ class test_Triangles_vbo_Activity : AppCompatActivity() {
              * 使用程序（不能少）
              */
             GLES30.glUseProgram(programIndex)
+
+            /**
+             * 创建一个顶点数组VAO
+             */
+            vao = IntBuffer.allocate(2)
+            GLES30.glGenVertexArrays(1, vao)
+            GLES30.glBindVertexArray(vao!![0])
+
+            /**
+             * 第一个vbo填充顶点数据
+             */
+            var vbo: IntBuffer? = IntBuffer.allocate(2)
+            GLES30.glGenBuffers(2, vbo)
+            GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbo!![0])
+            GLES30.glBufferData(
+                GLES30.GL_ARRAY_BUFFER,
+                vertexPoints.size * 4,
+                bufferVertex,
+                GLES30.GL_STATIC_DRAW
+            )
+
+            GLES30.glVertexAttribPointer(aPosition, 3, GLES30.GL_FLOAT, false, 12, 0)
+            GLES30.glEnableVertexAttribArray(aPosition)
+            GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0)
+
+            /**
+             * 第二个vbo填充颜色缓冲区
+             */
+            GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbo!![1])
+            GLES30.glBufferData(
+                GLES30.GL_ARRAY_BUFFER,
+                color.size * 4,
+                bufferColor,
+                GLES30.GL_STATIC_DRAW
+            )
+            GLES30.glVertexAttribPointer(aColor, 4, GLES30.GL_FLOAT, false, 16, 0)
+            GLES30.glEnableVertexAttribArray(aColor)
+            GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0)
+
+            /**
+             * 解绑VAO
+             */
+            GLES30.glBindVertexArray(0)
         }
 
 
@@ -134,20 +186,9 @@ class test_Triangles_vbo_Activity : AppCompatActivity() {
             GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
 
             /**
-             * 将坐标数组值传递给aPosition，并启用生效（不能少）
-             * size:表示顶点的数量
-             * stride:表示每个顶点之间数据的偏移量，比如每个顶点有x,y,x 每个数值4字节 那下个顶点的偏移量就是3*4，这里填写0也没有问题
+             * 这里比基本三角形单元简单多了，直接使用vao
              */
-            GLES30.glVertexAttribPointer(aPosition, 3, GLES30.GL_FLOAT, false, 12, bufferVertex)
-            GLES30.glEnableVertexAttribArray(aPosition)
-
-            /**
-             * 将颜色数组值传递给aColor，并启用生效（不能少）
-             * size:表示每个顶点颜色的值有多少长度表示rgba就是4，rgb就是3
-             * stride:表示每个顶点之间数据的偏移量，比如一个顶点argb，每个数值有4个字节，那下个颜色的偏移量未4*4,这里填写0也没有问题
-             */
-            GLES30.glVertexAttribPointer(aColor, 4, GLES30.GL_FLOAT, false, 16, bufferColor)
-            GLES30.glEnableVertexAttribArray(aColor)
+            GLES30.glBindVertexArray(vao!![0])
 
             /**
              * 绘制三角形
@@ -155,10 +196,9 @@ class test_Triangles_vbo_Activity : AppCompatActivity() {
             GLES30.glDrawArrays(GLES30.GL_TRIANGLES, 0, 3)
 
             /**
-             * 每次绘制完毕后要禁用
+             * 解绑
              */
-            GLES30.glDisableVertexAttribArray(aPosition)
-            GLES30.glDisableVertexAttribArray(aColor)
+            GLES30.glBindVertexArray(0)
         }
     }
 
