@@ -20,10 +20,11 @@ object ShardUtils {
         GLES30.glGetShaderiv(shardIndex, GLES30.GL_COMPILE_STATUS, compiler, 0)
         if (compiler[0] ==0 ) {
             Log.e("TAG", "Could not compile shader:${shaderType},source=$source")
-            Log.e("TAG", "GLES20 Error:" + GLES20.glGetShaderInfoLog(GLES30.GL_VERTEX_SHADER))
+            Log.e("TAG", "GLES20 Error:" + GLES20.glGetShaderInfoLog(shaderType))
             GLES30.glDeleteShader(shardIndex)
             shardIndex = 0
         }
+
         return shardIndex
     }
 
@@ -38,7 +39,7 @@ object ShardUtils {
         GLES30.glAttachShader(programIndex,vertexShardIndex)
         GLES30.glAttachShader(programIndex,fragmentShardIndex)
 
-        return 0
+        return programIndex
     }
 
     /**
@@ -49,7 +50,7 @@ object ShardUtils {
         var compiler = IntArray(1)
         GLES30.glGetProgramiv(programIndex,GLES30.GL_LINK_STATUS,compiler,0)
         if(compiler[0] != GLES30.GL_TRUE){
-            Log.e("TAG","glLinkProgram Program Error")
+            Log.e("TAG", "glLinkProgram Program Error programIndex=$programIndex")
             GLES30.glDeleteProgram(programIndex)
             return 0
         }
