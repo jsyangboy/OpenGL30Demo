@@ -84,6 +84,9 @@ class test_Texture_vbo_zhengjiao_Activity : AppCompatActivity() {
             0, 4, 1 //V0,V4,V1 三个顶点组成一个三角形
         )
 
+        private var bitmapWidth: Int = 0
+        private var bitmapHeight: Int = 0
+
         private fun getVertexString(): String? {
             return AssetsUtils.loadFromAssetsFile(mContext.resources, "texture2/vertex.sh")
         }
@@ -128,12 +131,15 @@ class test_Texture_vbo_zhengjiao_Activity : AppCompatActivity() {
                 .put(VERTEX_INDEX)
             mVertexIndexBuffer?.position(0)
 
-            textureId = TextureUtils.createTexture(
-                BitmapFactory.decodeResource(
-                    mContext.resources,
-                    R.drawable.girl
-                )
+            var bitmap = BitmapFactory.decodeResource(
+                mContext.resources,
+                R.drawable.girl
             )
+
+            bitmapWidth = bitmap.width
+            bitmapHeight = bitmap.height
+
+            textureId = TextureUtils.createTexture(bitmap)
 
             vao = IntBuffer.allocate(1)
             GLES30.glGenVertexArrays(1, vao)
@@ -176,8 +182,13 @@ class test_Texture_vbo_zhengjiao_Activity : AppCompatActivity() {
         override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
             GLES30.glViewport(0, 0, width, height)
 
+            /**
+             * 为了让图片等比例缩放
+             */
             val aspectRatio =
-                if (width > height) width.toFloat() / height.toFloat() else height.toFloat() / width.toFloat()
+                if (bitmapWidth > bitmapHeight) bitmapWidth.toFloat() / bitmapHeight.toFloat() else bitmapHeight.toFloat() / bitmapWidth.toFloat()
+
+
             if (width > height) {
                 //横屏
                 Matrix.orthoM(
