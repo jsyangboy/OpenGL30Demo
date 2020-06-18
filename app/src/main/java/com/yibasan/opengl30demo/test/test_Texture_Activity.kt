@@ -2,6 +2,7 @@ package com.yibasan.opengl30demo.test
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.opengl.GLES20
 import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.os.Bundle
@@ -11,7 +12,10 @@ import com.yibasan.opengl30demo.util.AssetsUtils
 import com.yibasan.opengl30demo.util.ShardUtils
 import com.yibasan.opengl30demo.util.TextureUtils
 import kotlinx.android.synthetic.main.activity_test_texture.*
-import java.nio.*
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.FloatBuffer
+import java.nio.ShortBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -25,7 +29,7 @@ class test_Texture_Activity : AppCompatActivity() {
         glSurfaceView.setRenderer(TextureRenderer(application))
     }
 
-    private class TextureRenderer(context: Context):GLSurfaceView.Renderer{
+    private class TextureRenderer(context: Context) : GLSurfaceView.Renderer {
         private var mContext = context
 
         private var TAG = "TextureRenderer"
@@ -40,10 +44,8 @@ class test_Texture_Activity : AppCompatActivity() {
 
         private var textureId = 0
 
-        private var aColor = 0
+        private var aTextureCoord = 0
         private var aPosition = 0
-        var vao: IntBuffer? = null
-
 
         /**
          * 顶点坐标
@@ -80,11 +82,11 @@ class test_Texture_Activity : AppCompatActivity() {
         )
 
         private fun getVertexString(): String? {
-            return AssetsUtils.loadFromAssetsFile(mContext.resources, "very/vertex.sh")
+            return AssetsUtils.loadFromAssetsFile(mContext.resources, "texture/vertex.sh")
         }
 
         private fun getFragmentString(): String? {
-            return AssetsUtils.loadFromAssetsFile(mContext.resources, "very/fragment.sh")
+            return AssetsUtils.loadFromAssetsFile(mContext.resources, "texture/fragment.sh")
         }
 
         override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
@@ -97,7 +99,7 @@ class test_Texture_Activity : AppCompatActivity() {
             var programIndex = ShardUtils.createProgram(vertexIndex, fragmenIndex)
             programIndex = ShardUtils.linkProgram(programIndex)
 
-            aColor = GLES30.glGetAttribLocation(programIndex, "aColor")
+            aTextureCoord = GLES30.glGetAttribLocation(programIndex, "aTextureCoord")
             aPosition = GLES30.glGetAttribLocation(programIndex, "aPosition")
 
             //分配内存空间,每个浮点型占4字节空间
@@ -111,7 +113,7 @@ class test_Texture_Activity : AppCompatActivity() {
             mTexVertexBuffer = ByteBuffer.allocateDirect(TEX_VERTEX.size * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer()
-                .put(TEX_VERTEX);
+                .put(TEX_VERTEX)
             mTexVertexBuffer?.position(0)
 
             mVertexIndexBuffer = ByteBuffer.allocateDirect(VERTEX_INDEX.size * 2)
@@ -120,21 +122,62 @@ class test_Texture_Activity : AppCompatActivity() {
                 .put(VERTEX_INDEX)
             mVertexIndexBuffer?.position(0)
 
-
-            textureId = TextureUtils.createTexture(BitmapFactory.decodeResource(mContext.resources,R.mipmap.ic_launcher))
+            textureId = TextureUtils.createTexture(
+                BitmapFactory.decodeResource(
+                    mContext.resources,
+                    R.drawable.girl
+                )
+            )
 
             GLES30.glUseProgram(programIndex)
         }
 
-        override fun onSurfaceChanged(p0: GL10?, p1: Int, p2: Int) {
-            TODO("Not yet implemented")
-
+        override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
+            GLES30.glViewport(0, 0, width, height)
         }
 
 
         override fun onDrawFrame(p0: GL10?) {
-            TODO("Not yet implemented")
+            GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
 
+            /**
+             * 给aPosition设置顶点数组数据
+             */
+            GLES30.glVertexAttribPointer(aPosition, 3, GLES30.GL_FLOAT, false, 12, vertexBuffer)
+            GLES30.glEnableVertexAttribArray(aPosition)
+
+            /**
+             * 给aTextureCoord设置顶点数组数据
+             */
+            GLES30.glVertexAttribPointer(
+                aTextureCoord,
+                2,
+                GLES30.GL_FLOAT,
+                false,
+                8,
+                mTexVertexBuffer
+            )
+            GLES30.glEnableVertexAttribArray(aTextureCoord)
+
+            //激活纹理
+            GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+            //绑定纹理
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, textureId)
+
+            // 绘制回执4个三角形
+            GLES20.glDrawElements(
+                GLES20.GL_TRIANGLES,
+                VERTEX_INDEX.size,
+                GLES20.GL_UNSIGNED_SHORT,
+                mVertexIndexBuffer
+            )
+
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D,0)
+            /**
+             * 每次绘制完毕后要禁用
+             */
+            GLES30.glDisableVertexAttribArray(aPosition)
+            GLES30.glDisableVertexAttribArray(aTextureCoord)
         }
     }
 }

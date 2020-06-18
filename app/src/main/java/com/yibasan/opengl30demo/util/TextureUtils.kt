@@ -3,14 +3,18 @@ package com.yibasan.opengl30demo.util
 import android.graphics.Bitmap
 import android.opengl.GLES30
 import android.opengl.GLUtils
+import android.util.Log
 
 object TextureUtils {
+
+    val TAG = "TextureUtils"
 
     /**
      * 创建纹理
      */
     fun createTexture(bitmap: Bitmap?): Int {
         if (bitmap == null) {
+            Log.e(TAG, "createTexture bitmap == null")
             return 0
         }
 
@@ -37,6 +41,7 @@ object TextureUtils {
         GLUtils.texImage2D(GLES30.GL_TEXTURE_2D, 0, bitmap, 0)
         GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0)
 
+        Log.e(TAG, "createTexture textureId[0]=" + textureId[0])
         return textureId[0]
     }
 }
