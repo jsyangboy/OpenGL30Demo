@@ -13,7 +13,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".test.test_Texture_Activity"></activity>
+        <activity
+            android:name=".test.test_Texture_vbo_Activity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".test.test_Texture_Activity"
+            android:screenOrientation="portrait" />
         <activity
             android:name=".test.test_Triangles_vbo_Activity"
             android:screenOrientation="portrait" />
