@@ -44,17 +44,12 @@
         android:layout_height="wrap_content"
         android:text="基本纹理+vbo+正交投影+FBO" />
 
-    <Button
-        android:id="@+id/test_texture_vbo_zhengjiao_fbo_rbo"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="基本纹理+vbo+正交投影+FBO+RBO" />
 
     <Button
-        android:id="@+id/test_texture_vbo_zhengjiao_pbo_rbo_pbo"
+        android:id="@+id/test_texture_vbo_zhengjiao_fbo_pbo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="基本纹理+vbo+正交投影+FBO+RBO+PBO" />
+        android:text="基本纹理+vbo+正交投影+FBO+PBO" />
 
 
 </LinearLayout>

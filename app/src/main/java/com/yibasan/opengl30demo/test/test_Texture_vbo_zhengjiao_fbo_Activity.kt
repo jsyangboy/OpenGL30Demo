@@ -7,6 +7,7 @@ import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.yibasan.opengl30demo.R
 import com.yibasan.opengl30demo.util.AssetsUtils
@@ -47,6 +48,7 @@ class test_Texture_vbo_zhengjiao_fbo_Activity : AppCompatActivity() {
         private var u_Matrix = 0
 
         var vao: IntBuffer? = null
+        var fbo: IntBuffer? = null
 
         private val mMatrix = FloatArray(16)
 
@@ -149,7 +151,7 @@ class test_Texture_vbo_zhengjiao_fbo_Activity : AppCompatActivity() {
             GLES30.glGenBuffers(2, vbo)
 
             /**
-             * 设置顶点的vbo
+             * 设置顶点的vbo（Vertex Buffer Object）
              */
             GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbo!![0])
             GLES30.glBufferData(
@@ -163,7 +165,7 @@ class test_Texture_vbo_zhengjiao_fbo_Activity : AppCompatActivity() {
             GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0)
 
             /**
-             * 设置纹理顶点的vbo
+             * 设置纹理顶点的vbo（Vertex Buffer Object）
              */
             GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbo!![1])
             GLES30.glBufferData(
@@ -177,6 +179,8 @@ class test_Texture_vbo_zhengjiao_fbo_Activity : AppCompatActivity() {
             GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0)
 
             GLES30.glBindVertexArray(0)
+
+
         }
 
         override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
@@ -214,6 +218,63 @@ class test_Texture_vbo_zhengjiao_fbo_Activity : AppCompatActivity() {
                     1f
                 )
             }
+
+
+            /**
+             * 创建FBO（Frame Buffer Object）
+             */
+            fbo = IntBuffer.allocate(1)
+            GLES30.glGenFramebuffers(1, fbo)
+            val status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER)
+            if (status != GLES20.GL_FRAMEBUFFER_COMPLETE) {
+                Log.e(TAG, "Failed to create framebuffer!!!")
+            } else {
+                GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, fbo!![0])
+                var rbo = IntBuffer.allocate(1)
+
+                /**
+                 * 创建RBO（Render Buffer Object）
+                 */
+                GLES30.glGenRenderbuffers(1, rbo)
+                GLES30.glBindRenderbuffer(GLES30.GL_RENDERBUFFER, rbo!![0])
+                //为我们的RenderBuffer申请存储空间
+                GLES20.glRenderbufferStorage(
+                    GLES20.GL_RENDERBUFFER,
+                    GLES20.GL_DEPTH_COMPONENT16,
+                    width,
+                    height
+                )
+
+                // 将renderBuffer挂载到frameBuffer的depth attachment 上。就上面申请了OffScreenId和FrameBuffer相关联
+                GLES20.glFramebufferRenderbuffer(
+                    GLES20.GL_FRAMEBUFFER,
+                    GLES20.GL_DEPTH_ATTACHMENT,
+                    GLES20.GL_RENDERBUFFER,
+                    rbo!![0]
+                )
+                /**
+                 * 使用纹理填充帧缓冲区
+                 */
+                GLES30.glFramebufferTexture2D(
+                    GLES20.GL_FRAMEBUFFER,
+                    GLES20.GL_COLOR_ATTACHMENT0,
+                    GLES20.GL_TEXTURE_2D,
+                    textureId,
+                    0
+                )
+
+
+                // See if GLES is happy with all this.
+                val status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER)
+                if (status != GLES20.GL_FRAMEBUFFER_COMPLETE) {
+                    throw RuntimeException("Framebuffer not complete, status=$status")
+                }
+
+                GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0)
+
+                Log.e(TAG, "fbo[0]=" + fbo!![0] + ",rbo[0]=" + rbo[0])
+            }
+
         }
 
 
@@ -226,8 +287,11 @@ class test_Texture_vbo_zhengjiao_fbo_Activity : AppCompatActivity() {
 
             //激活纹理
             GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+            GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, fbo!![0])
+
+
             //绑定纹理
-            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, textureId)
+            //GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, textureId)
 
             // 绘制回执4个三角形
             GLES20.glDrawElements(
@@ -237,7 +301,7 @@ class test_Texture_vbo_zhengjiao_fbo_Activity : AppCompatActivity() {
                 mVertexIndexBuffer
             )
 
-            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0)
+            GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0)
             GLES30.glBindVertexArray(0)
         }
     }
