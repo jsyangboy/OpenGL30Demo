@@ -3,10 +3,7 @@ package com.yibasan.opengl30demo
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.yibasan.opengl30demo.test.test_Texture_Activity
-import com.yibasan.opengl30demo.test.test_Texture_vbo_Activity
-import com.yibasan.opengl30demo.test.test_Triangles_Activity
-import com.yibasan.opengl30demo.test.test_Triangles_vbo_Activity
+import com.yibasan.opengl30demo.test.*
 import kotlinx.android.synthetic.main.activity_main.*
 
 
@@ -34,6 +31,11 @@ class MainActivity : AppCompatActivity() {
         var intentTextureVBO = Intent(this, test_Texture_vbo_Activity::class.java)
         test_texture_vbo.setOnClickListener {
             startActivity(intentTextureVBO)
+        }
+
+        var intentTextureVBOZhengjiao = Intent(this, test_Texture_vbo_zhengjiao_Activity::class.java)
+        test_texture_vbo_zhengjiao.setOnClickListener {
+            startActivity(intentTextureVBOZhengjiao)
         }
     }
 

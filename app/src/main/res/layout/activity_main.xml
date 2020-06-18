@@ -19,7 +19,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="三角形+VBO" />
-    
+
     <Button
         android:id="@+id/test_texture"
         android:layout_width="match_parent"
@@ -31,4 +31,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="基本纹理+vbo" />
+
+    <Button
+        android:id="@+id/test_texture_vbo_zhengjiao"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="基本纹理+vbo+正交投影" />
+
 </LinearLayout>
