@@ -37,6 +37,21 @@ class MainActivity : AppCompatActivity() {
         test_texture_vbo_zhengjiao.setOnClickListener {
             startActivity(intentTextureVBOZhengjiao)
         }
+
+        var intentTextureVBOZhengjiaoFBo = Intent(this, test_Texture_vbo_zhengjiao_fbo_Activity::class.java)
+        test_texture_vbo_zhengjiao_fbo.setOnClickListener {
+            startActivity(intentTextureVBOZhengjiaoFBo)
+        }
+
+       /* var intentTextureVBOZhengjiaoFboRbo = Intent(this, test_texture_vbo_zhengjiao_fbo_rbo_Activity::class.java)
+        test_texture_vbo_zhengjiao_fbo_rbo.setOnClickListener {
+            startActivity(intentTextureVBOZhengjiaoFboRbo)
+        }
+
+        var intentTextureVBOZhengjiaoFboRboPbo = Intent(this, test_texture_vbo_zhengjiao_fbo_rbo_pbo_Activity::class.java)
+        test_texture_vbo_zhengjiao_fbo_rbo.setOnClickListener {
+            startActivity(intentTextureVBOZhengjiaoFboRbo)
+        }*/
     }
 
 
