@@ -12,7 +12,7 @@ object FboUtils {
     /**
      * 创建一个FBO（Frame Buffer Object）
      */
-    fun createFbo(width: Int, height: Int, textureId: Int): Int {
+    fun createFbo(textureId: Int): Int {
         var fbo = IntBuffer.allocate(1)
         GLES30.glGenFramebuffers(1, fbo)
         var status = GLES30.glCheckFramebufferStatus(GLES30.GL_FRAMEBUFFER)
@@ -50,6 +50,11 @@ object FboUtils {
      * RBO(Render Buffer Object)
      */
     fun createFboRbo(width: Int, height: Int, textureId: Int): Int {
+        if (width == 0 || height == 0) {
+            Log.e(TAG, "width ==0 || height == 0")
+            return 0
+        }
+
         var fbo = IntBuffer.allocate(1)
         GLES30.glGenFramebuffers(1, fbo)
         var status = GLES30.glCheckFramebufferStatus(GLES30.GL_FRAMEBUFFER)

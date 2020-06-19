@@ -19,7 +19,7 @@ import java.nio.*
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-class test_Texture_vbo_zhengjiao_fbo_Activity : AppCompatActivity() {
+class test_Texture_vbo_zhengjiao_fbo_rbo_Activity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_test_texture)
@@ -189,10 +189,10 @@ class test_Texture_vbo_zhengjiao_fbo_Activity : AppCompatActivity() {
              */
             fboTextureId = TextureUtils.createTexture(bitmapWidth, bitmapHeight)
             /**
-             * 创建FBO（Frame Buffer Object）
+             * 创建FBO+RBO（Frame Buffer Object+Render Buffer Object）
              */
-            fbo = FboUtils.createFbo(fboTextureId)
-            Log.e(TAG, "fbo[0]=" + fbo)
+            fbo = FboUtils.createFboRbo(bitmapWidth, bitmapHeight, fboTextureId)
+            Log.e(TAG, "fbo[0]=$fbo")
 
         }
 
