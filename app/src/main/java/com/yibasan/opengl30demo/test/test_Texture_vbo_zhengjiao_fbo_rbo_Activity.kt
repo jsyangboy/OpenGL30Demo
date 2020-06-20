@@ -23,7 +23,7 @@ class test_Texture_vbo_zhengjiao_fbo_rbo_Activity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_test_texture)
-        title = "简单纹理"
+        title = "fbo+rbo"
         glSurfaceView.setEGLContextClientVersion(3)
 
         glSurfaceView.setRenderer(TextureRenderer(application))
@@ -137,13 +137,15 @@ class test_Texture_vbo_zhengjiao_fbo_rbo_Activity : AppCompatActivity() {
                 .put(VERTEX_INDEX)
             mVertexIndexBuffer?.position(0)
 
+            val options = BitmapFactory.Options()
             var bitmap = BitmapFactory.decodeResource(
                 mContext.resources,
-                R.drawable.girl
+                R.drawable.girl,
+                options
             )
 
-            bitmapWidth = bitmap.width
-            bitmapHeight = bitmap.height
+            bitmapWidth = options.outWidth
+            bitmapHeight = options.outHeight
 
             textureId = TextureUtils.createTexture(bitmap)
 

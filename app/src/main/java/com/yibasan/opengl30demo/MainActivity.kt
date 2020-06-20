@@ -48,10 +48,10 @@ class MainActivity : AppCompatActivity() {
             startActivity(intentTextureVBOZhengjiaoFboRbo)
         }
 
-       /* var intentTextureVBOZhengjiaoFboRboPbo = Intent(this, test_texture_vbo_zhengjiao_fbo_rbo_pbo_Activity::class.java)
-        test_texture_vbo_zhengjiao_fbo_rbo.setOnClickListener {
-            startActivity(intentTextureVBOZhengjiaoFboRbo)
-        }*/
+        var intentTextureVBOZhengjiaoFboRboPbo = Intent(this, test_Texture_vbo_zhengjiao_fbo_rbo_pbo_Activity::class.java)
+        test_texture_vbo_zhengjiao_fbo_rbo_pbo.setOnClickListener {
+            startActivity(intentTextureVBOZhengjiaoFboRboPbo)
+        }
     }
 
 

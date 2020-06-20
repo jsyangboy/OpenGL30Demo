@@ -15,6 +15,10 @@
         android:theme="@style/AppTheme">
 
         <activity
+            android:name=".test.test_Texture_vbo_zhengjiao_fbo_rbo_pbo_Activity"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".test.test_Texture_vbo_zhengjiao_fbo_rbo_Activity"
             android:screenOrientation="portrait" />
 

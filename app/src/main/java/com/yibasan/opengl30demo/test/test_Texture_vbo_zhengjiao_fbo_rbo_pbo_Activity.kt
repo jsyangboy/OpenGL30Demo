@@ -6,22 +6,22 @@ import android.opengl.GLES20
 import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.yibasan.opengl30demo.R
-import com.yibasan.opengl30demo.util.AssetsUtils
-import com.yibasan.opengl30demo.util.ShardUtils
-import com.yibasan.opengl30demo.util.TextureUtils
+import com.yibasan.opengl30demo.util.*
 import kotlinx.android.synthetic.main.activity_test_texture.*
 import java.nio.*
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-class test_Texture_vbo_zhengjiao_Activity : AppCompatActivity() {
+class test_Texture_vbo_zhengjiao_fbo_rbo_pbo_Activity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_test_texture)
-        title = "简单纹理"
+        title = "fbo+rbo+pbo"
         glSurfaceView.setEGLContextClientVersion(3)
 
         glSurfaceView.setRenderer(TextureRenderer(application))
@@ -45,8 +45,14 @@ class test_Texture_vbo_zhengjiao_Activity : AppCompatActivity() {
         private var aTextureCoord = 0
         private var aPosition = 0
         private var u_Matrix = 0
+        private var width: Int = 0
+        private var height: Int = 0
 
         var vao: IntBuffer? = null
+        var fbo: Int = 0
+        var fboTextureId = 0
+        var pbo: IntArray = IntArray(2)
+        var pos: IntArray = IntArray(2)
 
         private val mMatrix = FloatArray(16)
 
@@ -95,6 +101,7 @@ class test_Texture_vbo_zhengjiao_Activity : AppCompatActivity() {
             return AssetsUtils.loadFromAssetsFile(mContext.resources, "texture2/fragment.sh")
         }
 
+
         override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
 
             GLES30.glClearColor(1f, 1f, 1f, 1f)
@@ -140,6 +147,7 @@ class test_Texture_vbo_zhengjiao_Activity : AppCompatActivity() {
 
             bitmapWidth = options.outWidth
             bitmapHeight = options.outHeight
+            Log.e(TAG, "bitmapWidth=$bitmapWidth,bitmapHeight=$bitmapHeight")
 
             textureId = TextureUtils.createTexture(bitmap)
 
@@ -151,7 +159,7 @@ class test_Texture_vbo_zhengjiao_Activity : AppCompatActivity() {
             GLES30.glGenBuffers(2, vbo)
 
             /**
-             * 设置顶点的vbo
+             * 设置顶点的vbo（Vertex Buffer Object）
              */
             GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbo!![0])
             GLES30.glBufferData(
@@ -165,7 +173,7 @@ class test_Texture_vbo_zhengjiao_Activity : AppCompatActivity() {
             GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0)
 
             /**
-             * 设置纹理顶点的vbo
+             * 设置纹理顶点的vbo（Vertex Buffer Object）
              */
             GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, vbo!![1])
             GLES30.glBufferData(
@@ -179,10 +187,42 @@ class test_Texture_vbo_zhengjiao_Activity : AppCompatActivity() {
             GLES30.glBindBuffer(GLES30.GL_ARRAY_BUFFER, 0)
 
             GLES30.glBindVertexArray(0)
+
+            /**
+             * 创建一个指定大小的rgba的纹理
+             */
+            fboTextureId = TextureUtils.createTexture(bitmapWidth, bitmapHeight)
+            /**
+             * 创建FBO+RBO（Frame Buffer Object+Render Buffer Object）
+             */
+            fbo = FboUtils.createFboRbo(bitmapWidth, bitmapHeight, fboTextureId)
+            Log.e(TAG, "fbo[0]=$fbo")
+
+            /**
+             * 创建两个pbo
+             */
+            pbo = PboUtils.createPboBuffers(pbo.size, bitmapWidth, bitmapHeight)
+            pos[0] = 0
+            pos[1] = 1
+            Log.e(TAG, "pbo[0]=$pbo")
         }
+
+        var mTempMatrix = FloatArray(16)
 
         override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
             GLES30.glViewport(0, 0, width, height)
+            this.width = width
+            this.height = height
+            Matrix.orthoM(
+                mTempMatrix,
+                0,
+                -1f,
+                1f,
+                1f,//这里的bottom跟top要颠倒，要不得到的图像会翻转
+                -1f,
+                -1f,
+                1f
+            )
 
             /**
              * 为了让图片等比例缩放
@@ -216,21 +256,25 @@ class test_Texture_vbo_zhengjiao_Activity : AppCompatActivity() {
                     1f
                 )
             }
+
         }
 
 
         override fun onDrawFrame(p0: GL10?) {
-            GLES30.glClear(GLES30.GL_COLOR_BUFFER_BIT)
 
-            GLES30.glUniformMatrix4fv(u_Matrix, 1, false, mMatrix, 0)
-
+            /**
+             * 第一步先绘制到FBO绑定的纹理（绘制就是重新走一遍绘制流程）
+             * 注意1：glViewport的宽高跟屏幕的宽高不一样的，我们这里使用了bitmap的宽高最为绘制窗口的大小
+             * 注意2：mTempMatrix 这里因为我们绘制的大小是bitmap的大小，不需要做缩放，全部铺满即可
+             */
+            GLES30.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
+            GLES30.glUniformMatrix4fv(u_Matrix, 1, false, mTempMatrix, 0)//注意mTempMatrix是不需要做出来，fu
             GLES30.glBindVertexArray(vao!![0])
-
+            GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, fbo)
+            GLES30.glViewport(0, 0, bitmapWidth, bitmapHeight)
             //激活纹理
             GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
-            //绑定纹理
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, textureId)
-
             // 绘制回执4个三角形
             GLES20.glDrawElements(
                 GLES20.GL_TRIANGLES,
@@ -238,9 +282,43 @@ class test_Texture_vbo_zhengjiao_Activity : AppCompatActivity() {
                 GLES20.GL_UNSIGNED_SHORT,
                 mVertexIndexBuffer
             )
+            GLES30.glBindVertexArray(GLES30.GL_NONE)
+            GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0) //这里解绑后下一次回去就会自动切换到屏幕
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, GLES30.GL_NONE)
 
-            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, 0)
-            GLES30.glBindVertexArray(0)
+            var pixBuf = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                PboUtils.readPixelsFromFbo(pbo, bitmapWidth, bitmapHeight, pos, fbo)
+            } else {
+                null
+            }
+            Log.e(TAG, "pixBuf=$pixBuf")
+
+            /**
+             * 第二步将FBO绘制好的纹理fboTextureId绘制到屏幕（绘制就是重新走一遍绘制流程）
+             */
+            GLES30.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
+            GLES30.glUniformMatrix4fv(u_Matrix, 1, false, mMatrix, 0)
+            GLES30.glViewport(0, 0, width, height)
+            GLES30.glBindVertexArray(vao!![0])
+            //绑定纹理
+            GLES30.glActiveTexture(GLES30.GL_TEXTURE0)
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, fboTextureId)
+            // 绘制回执4个三角形
+            GLES20.glDrawElements(
+                GLES20.GL_TRIANGLES,
+                VERTEX_INDEX.size,
+                GLES20.GL_UNSIGNED_SHORT,
+                mVertexIndexBuffer
+            )
+            GLES30.glBindVertexArray(GLES30.GL_NONE)
+            GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, GLES30.GL_NONE)
+
+            /*var pixBufB= if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                PboUtils.readPixels(pbo, width, height, pos)
+            } else {
+                null
+            }
+            Log.e(TAG, "pixBufB=$pixBufB")*/
         }
     }
 }
