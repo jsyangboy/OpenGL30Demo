@@ -60,7 +60,17 @@ class WindowSurface(eglCore: EglCore, surface: Surface, releaseSurface: Boolean)
         mEglCore?.makeCurrent(mEGLSurface)
     }
 
+    /**
+     * Sends the presentation time stamp to EGL.
+     *
+     * @param nsecs Timestamp, in nanoseconds.
+     */
+    fun setPresentationTime(nsecs: Long) {
+        mEglCore!!.setPresentationTime(mEGLSurface, nsecs)
+    }
+
     fun swapBuffers(): Boolean {
+        Log.e(TAG,"swapBuffers")
         var result = mEglCore?.swapBuffers(mEGLSurface)
         if (!result!!) {
             Log.e(TAG, "WARNING: swapBuffers() failed")

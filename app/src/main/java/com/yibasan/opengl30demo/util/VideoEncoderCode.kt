@@ -78,6 +78,10 @@ class VideoEncoderCode(widht: Int, height: Int, bitRate: Int, outputFile: File) 
 
 
     fun drainEncoder(endOfStream: Boolean) {
+        Log.d(
+            TAG,
+            "drainEncoder($endOfStream)"
+        )
 
         val TIMOUT_USEC = 10000
         if (endOfStream) {
@@ -89,12 +93,14 @@ class VideoEncoderCode(widht: Int, height: Int, bitRate: Int, outputFile: File) 
             var encoderStatus = mEncoder?.dequeueOutputBuffer(mBufferInfo!!, TIMOUT_USEC.toLong())
             if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                 if (!endOfStream) {
+                    Log.d(TAG, " break 3")
                     break
                 } else {
                     Log.e(TAG, "no output available,spinning to await EOS")
                 }
             } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
                 encoderOutputBuffers = mEncoder?.outputBuffers
+                Log.d(TAG, "writeSampleData")
             } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 if (mMuxerStarted) {
                     throw RuntimeException("format changed twice")
@@ -122,8 +128,9 @@ class VideoEncoderCode(widht: Int, height: Int, bitRate: Int, outputFile: File) 
                                 " was null"
                     )
 
-                if (mBufferInfo!!.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
+                if ((mBufferInfo!!.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
                     mBufferInfo!!.size = 0
+                    Log.d(TAG, "mBufferInfo!!.size = 0")
                 }
                 if (mBufferInfo!!.size != 0) {
                     if (!mMuxerStarted) {
@@ -134,25 +141,35 @@ class VideoEncoderCode(widht: Int, height: Int, bitRate: Int, outputFile: File) 
                     encodedData?.limit(mBufferInfo!!.offset + mBufferInfo!!.size)
 
                     mMuxer?.writeSampleData(mTrackIndex, encodedData!!, mBufferInfo!!)
-
-                    if ((mBufferInfo?.flags!! and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                        if (!endOfStream) {
-                            Log.w(
-                                TAG,
-                                "reached end of stream unexpectedly"
-                            )
-                        } else {
-                            Log.d(
-                                TAG,
-                                "end of stream reached"
-                            )
-                        }
-                        break
-                    }
+                    Log.d(
+                        TAG,
+                        "sent " + mBufferInfo!!.size + " bytes to muxer, ts=" +
+                                mBufferInfo!!.presentationTimeUs
+                    )
                 }
-            }
 
+                mEncoder?.releaseOutputBuffer(encoderStatus, false)
+                if ((mBufferInfo?.flags!! and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                    if (!endOfStream) {
+                        Log.w(
+                            TAG,
+                            "reached end of stream unexpectedly"
+                        )
+                    } else {
+                        Log.d(
+                            TAG,
+                            "end of stream reached"
+                        )
+                    }
+                    break
+                }
+                Log.d(
+                    TAG,
+                    "no break"
+                )
+            }
         }
+        Log.d(TAG, "drainEncoder end")
     }
 
 }

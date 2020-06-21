@@ -4,51 +4,56 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.opengl.GLES20
 import android.opengl.GLES30
-import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.os.Bundle
 import android.os.Environment
+import android.os.HandlerThread
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.yibasan.opengl30demo.R
 import com.yibasan.opengl30demo.util.*
-import kotlinx.android.synthetic.main.activity_test_texture.*
+import kotlinx.android.synthetic.main.activity_test_texture_video_save.*
 import java.io.File
-import java.lang.Exception
 import java.nio.*
-import javax.microedition.khronos.egl.EGLConfig
-import javax.microedition.khronos.opengles.GL10
 
 class test_Texture_vbo_zhengjiao_fbo_rbo_video_save_Activity : AppCompatActivity() {
     var textureRenderer: TextureRenderer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_test_texture)
+        setContentView(R.layout.activity_test_texture_video_save)
         title = "fbo+rbo+视频保存"
-        glSurfaceView.setEGLContextClientVersion(3)
+        //glSurfaceView14.setEGLContextClientVersion(3)
 
-        textureRenderer = TextureRenderer(application)
-        glSurfaceView.setRenderer(textureRenderer)
+        textureRenderer = TextureRenderer("application")
+        textureRenderer?.mContext = applicationContext
+        //glSurfaceView14.setRenderer(textureRenderer)
+        textureRenderer?.init(544, 960)
+
+        btn_start.setOnClickListener {
+            textureRenderer?.make()
+        }
+
     }
 
     override fun onResume() {
         super.onResume()
-        glSurfaceView.onResume()
+        //glSurfaceView14.onResume()
     }
 
     override fun onPause() {
         super.onPause()
-        glSurfaceView.onPause()
+        //glSurfaceView14.onPause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        textureRenderer?.destroy()
+        textureRenderer?.destroy3()
     }
 
-    class TextureRenderer(context: Context) : GLSurfaceView.Renderer {
-        private var mContext = context
+    class TextureRenderer(name: String):HandlerThread(name) {
+
+        var mContext: Context? = null
 
         private var TAG = "TextureRenderer"
 
@@ -126,16 +131,42 @@ class test_Texture_vbo_zhengjiao_fbo_rbo_video_save_Activity : AppCompatActivity
         private var windowSurface: WindowSurface? = null
 
         private fun getVertexString(): String? {
-            return AssetsUtils.loadFromAssetsFile(mContext.resources, "texture2/vertex.sh")
+            return AssetsUtils.loadFromAssetsFile(mContext?.resources!!, "texture2/vertex.sh")
         }
 
         private fun getFragmentString(): String? {
-            return AssetsUtils.loadFromAssetsFile(mContext.resources, "texture2/fragment.sh")
+            return AssetsUtils.loadFromAssetsFile(mContext?.resources!!, "texture2/fragment.sh")
         }
 
-        override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
+        fun init(width: Int, height: Int) {
+            Log.e(TAG, "init")
+            onSurfaceCreated()
+            onSurfaceChanged(width, height)
+        }
 
-            GLES30.glClearColor(1f, 1f, 1f, 1f)
+        fun onSurfaceCreated() {
+            Log.e(TAG, "onSurfaceCreated start")
+
+            try {
+                var file = File(VIME_VIDEO_PATH)
+                if (file.mkdirs()) {
+                    Log.e(TAG, "mkdirs faile")
+                }
+                mEglCore = EglCore(null, EglCore.FALG_TRY_GLES3)
+                videoEncoderCode = VideoEncoderCode(
+                    544,
+                    960,
+                    1000000,
+                    File(VIME_VIDEO_PATH + System.currentTimeMillis() + ".mp4")
+                )
+                windowSurface =
+                    WindowSurface(mEglCore!!, videoEncoderCode!!.getInputSurface()!!, false)
+                windowSurface?.makeCurrent()
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            //GLES30.glClearColor(1f, 1f, 1f, 1f)
 
             var vertexIndex = ShardUtils.loadShader(GLES30.GL_VERTEX_SHADER, getVertexString())
 
@@ -171,7 +202,7 @@ class test_Texture_vbo_zhengjiao_fbo_rbo_video_save_Activity : AppCompatActivity
 
             val options = BitmapFactory.Options()
             var bitmap = BitmapFactory.decodeResource(
-                mContext.resources,
+                mContext?.resources,
                 R.drawable.girl,
                 options
             )
@@ -228,30 +259,14 @@ class test_Texture_vbo_zhengjiao_fbo_rbo_video_save_Activity : AppCompatActivity
             fbo = FboUtils.createFboRbo(bitmapWidth, bitmapHeight, fboTextureId)
             Log.e(TAG, "fbo[0]=$fbo")
 
-            try {
-                var file = File(VIME_VIDEO_PATH)
-                if (file.mkdirs()) {
-                    Log.e(TAG, "mkdirs faile")
-                }
-                mEglCore = EglCore(null, EglCore.FALG_TRY_GLES3)
-                videoEncoderCode = VideoEncoderCode(
-                    544,
-                    960,
-                    1000000,
-                    File(VIME_VIDEO_PATH + System.currentTimeMillis() + ".mp4")
-                )
-                windowSurface =
-                    WindowSurface(mEglCore!!, videoEncoderCode!!.getInputSurface()!!, false)
-                windowSurface?.makeCurrent()
-                videoEncoderCode?.drainEncoder(false)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+
+            Log.e(TAG, "onSurfaceCreated end")
         }
 
         var mTempMatrix = FloatArray(16)
 
-        override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
+        fun onSurfaceChanged(width: Int, height: Int) {
+            Log.e(TAG, "onSurfaceChanged start")
             GLES30.glViewport(0, 0, width, height)
             this.width = width
             this.height = height
@@ -299,11 +314,14 @@ class test_Texture_vbo_zhengjiao_fbo_rbo_video_save_Activity : AppCompatActivity
                 )
             }
 
+            Log.e(TAG, "onSurfaceChanged end")
+
         }
+        var frameIndex = 0;
 
-
-        override fun onDrawFrame(p0: GL10?) {
-
+        fun onDrawFrame() {
+            Log.e(TAG, "onDrawFrame =")
+            videoEncoderCode?.drainEncoder(false)
             /**
              * 第一步先绘制到FBO绑定的纹理（绘制就是重新走一遍绘制流程）
              * 注意1：glViewport的宽高跟屏幕的宽高不一样的，我们这里使用了bitmap的宽高最为绘制窗口的大小
@@ -348,12 +366,35 @@ class test_Texture_vbo_zhengjiao_fbo_rbo_video_save_Activity : AppCompatActivity
             )
             GLES30.glBindVertexArray(GLES30.GL_NONE)
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, GLES30.GL_NONE)
-
+            val presentationTimeNsec: Long = computePresentationTimeNsec(frameIndex)
+            windowSurface?.setPresentationTime(presentationTimeNsec)
             windowSurface?.swapBuffers()
         }
 
-        fun destroy() {
+        //fps 30
+        private fun computePresentationTimeNsec(frameIndex: Int): Long {
+            val ONE_BILLION: Long = 1000000000
+            return frameIndex * ONE_BILLION / 30
+        }
+
+        fun make(){
+
+            Log.e(TAG, "run")
+            while (true) {
+                Log.e(TAG, "index =$frameIndex")
+                onDrawFrame()
+                frameIndex++
+
+                if (frameIndex > 300) {
+                    break
+                }
+            }
+            Log.e(TAG, "drawFrame End")
+        }
+
+        fun destroy3() {
             videoEncoderCode?.drainEncoder(true)
         }
+
     }
 }
