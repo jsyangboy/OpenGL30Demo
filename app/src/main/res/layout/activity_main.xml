@@ -56,4 +56,11 @@
         android:layout_height="wrap_content"
         android:text="基本纹理+vbo+正交投影+FBO+RBO+PBO" />
 
+    <Button
+        android:id="@+id/test_texture_vbo_zhengjiao_fbo_rbo_video_save"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="基本纹理+vbo+正交投影+FBO+RBO+视频保存" />
+
+
 </LinearLayout>
