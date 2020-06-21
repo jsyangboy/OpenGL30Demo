@@ -118,7 +118,7 @@ object PboUtils {
     }
 
     /**
-     * 从帧缓存中肚脐pix
+     * 从FBO帧缓存中读取pix
      */
     @RequiresApi(Build.VERSION_CODES.N)
     fun readPixelsFromFbo(

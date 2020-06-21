@@ -1,6 +1,7 @@
 package com.yibasan.opengl30demo.test
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.opengl.GLES20
 import android.opengl.GLES30
@@ -13,6 +14,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.yibasan.opengl30demo.R
 import com.yibasan.opengl30demo.util.*
 import kotlinx.android.synthetic.main.activity_test_texture.*
+import kotlinx.android.synthetic.main.activity_test_texture.glSurfaceView
+import kotlinx.android.synthetic.main.activity_test_texture_pbo.*
 import java.nio.*
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -20,11 +23,24 @@ import javax.microedition.khronos.opengles.GL10
 class test_Texture_vbo_zhengjiao_fbo_rbo_pbo_Activity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_test_texture)
+        setContentView(R.layout.activity_test_texture_pbo)
         title = "fbo+rbo+pbo"
         glSurfaceView.setEGLContextClientVersion(3)
 
-        glSurfaceView.setRenderer(TextureRenderer(application))
+        var textReader = TextureRenderer(application)
+        glSurfaceView.setRenderer(textReader)
+
+        button.setOnClickListener {
+            var bitmap = textReader.takePic(object : TextureRenderer.TakePicListener {
+                override fun takePic(bitmap: Bitmap?) {
+                    if (bitmap != null) {
+                        runOnUiThread { imageView.setImageBitmap(bitmap) }
+
+                    }
+                }
+            })
+
+        }
     }
 
     private class TextureRenderer(context: Context) : GLSurfaceView.Renderer {
@@ -92,6 +108,7 @@ class test_Texture_vbo_zhengjiao_fbo_rbo_pbo_Activity : AppCompatActivity() {
 
         private var bitmapWidth: Int = 0
         private var bitmapHeight: Int = 0
+        private var pixBuf: ByteBuffer? = null
 
         private fun getVertexString(): String? {
             return AssetsUtils.loadFromAssetsFile(mContext.resources, "texture2/vertex.sh")
@@ -101,6 +118,17 @@ class test_Texture_vbo_zhengjiao_fbo_rbo_pbo_Activity : AppCompatActivity() {
             return AssetsUtils.loadFromAssetsFile(mContext.resources, "texture2/fragment.sh")
         }
 
+        interface TakePicListener {
+            fun takePic(bitmap: Bitmap?)
+        }
+
+        var takePicListener: TakePicListener? = null
+        var isTakePic = false
+        var isFirst = true
+        fun takePic(takePicListener: TakePicListener?) {
+            this.takePicListener = takePicListener
+            isTakePic = true
+        }
 
         override fun onSurfaceCreated(p0: GL10?, p1: EGLConfig?) {
 
@@ -286,12 +314,20 @@ class test_Texture_vbo_zhengjiao_fbo_rbo_pbo_Activity : AppCompatActivity() {
             GLES30.glBindFramebuffer(GLES30.GL_FRAMEBUFFER, 0) //这里解绑后下一次回去就会自动切换到屏幕
             GLES30.glBindTexture(GLES30.GL_TEXTURE_2D, GLES30.GL_NONE)
 
-            var pixBuf = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                PboUtils.readPixelsFromFbo(pbo, bitmapWidth, bitmapHeight, pos, fbo)
-            } else {
-                null
+            if (isTakePic || isFirst) {
+                isTakePic = false
+                pixBuf = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    PboUtils.readPixelsFromFbo(pbo, bitmapWidth, bitmapHeight, pos, fbo)
+                } else {
+                    null
+                }
+                Log.e(TAG, "pixBuf=$pixBuf")
+                if (pixBuf != null && !isFirst) {
+                    var bitmap = BitmapUtils.createBitmap(bitmapWidth, bitmapHeight, pixBuf)
+                    takePicListener?.takePic(bitmap)
+                }
+                isFirst = false
             }
-            Log.e(TAG, "pixBuf=$pixBuf")
 
             /**
              * 第二步将FBO绘制好的纹理fboTextureId绘制到屏幕（绘制就是重新走一遍绘制流程）
